@@ -1,25 +1,105 @@
-import vpython as vp
+""" MICHELSON INTERFEROMETER """
 
-# Alias a funciones
+import vpython as vp
+import random as rand
+from drawings import table, laserbeam, laserengine, beamsplitter
+
+# Set alias to ease usability
 vc = vp.vector
 cl = vp.color
 
-# Funciones
-def laser(x, y, z, n, s=.1):
-	if n < 1: return
-	step = .05
-	odd = n%2!=0
-	# Obtener coordenadas de inicio de impresion
-	start = y
-	if odd: start += -step*(n//2)
-	else: start += (1-n)*step/2
-	# Iterar cada punto de luz
-	beam = list()
-	for i in range(1, n+1):
-		p = vp.sphere(pos=vc(x, start, z), radius=s, color=cl.red, make_trail=True)
-		beam.append(p)
-		start += step
-	return beam
+# Set library configuration
+vp.scene.width = 1500
+vp.scene.height = 750
+vp.scene.autoscale = False
+#vp.scene.userspin = False
+#vp.scene.userpan = False
+vp.scene.background = vc(.7, .7, .7)
+vp.scene.camera.pos = vc(0, 0, 70)
 
-def move_beam(beam, dv):
-	for b in beam: b.pos += dv
+
+""" FUNCTIONS """
+def move_particle(p):
+	""" Move particle by its own speed
+	params:
+		* p: light particles
+	"""
+	p.pos.x = round(p.pos.x + p.speed.x, 3)
+	p.pos.y = round(p.pos.y + p.speed.y, 3)
+	p.pos.z = round(p.pos.z + p.speed.z, 3)
+
+def compute_collision(wall, p, walltype):
+	""" compute_collision
+	* check if given particle collision with given wall
+	params:
+		* wall: object to collision with (box object)
+		* p: light particle (sphere object)
+	"""
+	# Check if there is collision
+	print("-------------")
+	print("x: %s"%p.pos.x)
+	print("y: %s"%p.pos.y)
+	print("calc y: %s"%wall.calc_y(p.pos.x))
+	if wall.calc_y(p.pos.x) == p.pos.y:
+		# If walltype is beamsplitter: odds of ignoring collision is 50%
+		if walltype == "beamsplitter":
+			if bool( rand.randint(0, 1) ): return
+
+		# Update speed vector
+		mag = vp.mag(p.speed) # Get magnitude (abs of vector)
+		rad = beamsplitter_angle*vp.pi/180
+		p.speed.x = round( mag*( vp.cos(rad)**2 - vp.sin(rad)**2 ) , 3)
+		p.speed.y = round( 2*mag*vp.sin(rad)*vp.cos(rad) , 3)
+
+
+""" DATA """
+laserengine_x = -45
+laserengine_y = 0
+laserengine_length = 10
+beamsplitter_x = 0
+beamsplitter_y = 0
+beamsplitter_length = 10
+mirror1_x = 30 # L1
+mirror1_y = -10
+mirror2_x = 0
+mirror2_y = -30 # L2
+receptor_x = 0
+receptor_y = 30
+
+# Physics Parameters
+t = 0 # Init time
+rate = 500 # Ratio of execution per second
+dt = 1000/rate # Time differential (miliseconds)
+dv = vc(0.025, 0, 0) # light particle's movement speed
+beamsplitter_angle = 45
+number_of_particles = 50
+
+
+""" EXECUTE """
+# Objects
+table(100, 100, vc(.9, .9, .9))
+engine = laserengine(laserengine_x, laserengine_y, laserengine_length, cl.black)
+splitter = beamsplitter(beamsplitter_x, beamsplitter_y, beamsplitter_length, beamsplitter_angle)
+beam = laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles)
+
+# Set speed to beam
+for p in beam: p.speed = vc(dv.x, dv.y, dv.z)
+
+# Render loop
+while t<4000:
+	vp.rate(rate) # Pause for time differential
+	t += dt
+
+	# Compute from cods
+	for p in beam:
+		# Collision with BeamSplitter
+		if True \
+			and p.pos.x >= (beamsplitter_x-beamsplitter_length/2) \
+			and p.pos.y >= (beamsplitter_y-beamsplitter_length/2) \
+			and p.pos.x <= (beamsplitter_x+beamsplitter_length/2) \
+			and p.pos.y <= (beamsplitter_y+beamsplitter_length/2) :
+			compute_collision(splitter, p, "beamsplitter")
+		# Collision with Mirror1
+		# Collision with Mirror2
+		# Collision with Receptor
+		move_particle(p)
