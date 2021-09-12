@@ -52,11 +52,13 @@ def laserengine(x, y, l, c):
 	vp.cylinder(
 		pos=vc(x, y, 0),
 		axis=vc(vl_l1_length, 0, 0),
-		radius=2, color=c)
+		radius=2,
+		color=cl.black)
 	vp.cylinder(
 		pos=vc(x+vl_l1_length, y, 0),
 		axis=vc(vl_l2_length, 0, 0),
-		radius=1, color=c)
+		radius=1,
+		texture=vp.textures.metal)
 
 def beamsplitter(x, y, l, angle):
 	""" Print beam splitter
@@ -73,3 +75,17 @@ def beamsplitter(x, y, l, angle):
 		color=cl.white)
 	splitter.calc_y = lambda _x: round((_x - x)*vp.tan(rad) + y, 3)
 	return splitter
+
+def beamreceptorengine(x, y, l):
+	""" Print beam receptor
+	params:
+		* x: X axis
+		* y: Y axis
+		* l: width
+	"""
+	beamreceptor = vp.box(
+		pos=vc(x, y, 0),
+		size=vc(l, 1, 1),
+		texture="https://i.imgur.com/Ijy9Yqs.png")
+	beamreceptor.calc_y = None
+	return beamreceptor

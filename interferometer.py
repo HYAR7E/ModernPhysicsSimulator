@@ -2,7 +2,6 @@
 
 import vpython as vp
 import random as rand
-import datetime as dt
 from drawings import table, laserbeam, laserengine, beamsplitter
 
 # Set alias to ease usability
@@ -60,12 +59,15 @@ laserengine_length = 10
 beamsplitter_x = 0
 beamsplitter_y = 0
 beamsplitter_length = 10
-mirror1_x = 30 # L1
+mirror1_x = 30
 mirror1_y = -10
+mirror1_length = 10
 mirror2_x = 0
-mirror2_y = -30 # L2
+mirror2_y = -30
+mirror2_length = 10
 receptor_x = 0
 receptor_y = 30
+receptor_length = 10
 
 # Physics Parameters
 t = 0 # Init time
@@ -76,7 +78,7 @@ dv = vc(0.25, 0, 0) # light particle's movement speed
 * this value should be half the value of step in laserbeam function
 """
 beamsplitter_angle = 45
-number_of_particles = 20
+number_of_particles = 10
 
 
 """ EXECUTE """
@@ -88,6 +90,12 @@ table(100, 100, vc(.9, .9, .9))
 engine = laserengine(laserengine_x, laserengine_y, laserengine_length, cl.black)
 splitter = beamsplitter(beamsplitter_x, beamsplitter_y, beamsplitter_length, beamsplitter_angle)
 beam += laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
+# Mirror 1 (right)
+mirror1 = None
+# Mirror 2 (bottom)
+mirror2 = None
+# Receptor (top)
+receptor = None
 
 # Render loop
 while True:
@@ -95,7 +103,6 @@ while True:
 	t += step
 
 	# Compute from cods
-	dto = dt.datetime.now()
 	for p in beam:
 		# Collision with BeamSplitter
 		if True \
@@ -104,13 +111,31 @@ while True:
 			and p.pos.x <= (beamsplitter_x+beamsplitter_length/2) \
 			and p.pos.y <= (beamsplitter_y+beamsplitter_length/2) :
 			compute_collision(splitter, p, "beamsplitter")
-		# Collision with Mirror1
+		# Collision with Mirror1 (right)
+		if True \
+			and p.pos.x == (mirror1_x) \
+			and p.pos.y >= (mirror1_y-mirror1_length/2) \
+			and p.pos.y <= (mirror1_y+mirror1_length/2) :
+			#compute_collision(mirror1, p, "mirror")
+			pass
 		# Collision with Mirror2
+		if True \
+			and p.pos.y == (mirror2_y)\
+			and p.pos.x >= (mirror2_x-mirror2_length/2) \
+			and p.pos.x <= (mirror2_x+mirror2_length/2):
+			#compute_collision(mirror2, p, "mirror")
+			pass
 		# Collision with Receptor
-		move_particle(p)
-	print("loop: %s"%(dt.datetime.now() - dto).microseconds)
+		if True \
+			and p.pos.y == (receptor_y)\
+			and p.pos.x >= (receptor_x-receptor_length/2) \
+			and p.pos.x <= (receptor_x+receptor_length/2):
+			compute_collision(receptor, p, "receptor")
 
-	if t%20 == 0:
-		# Fire new laserbeam
-		beam +=  laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
-		print(len(beam))
+		# Move particle
+		move_particle(p)
+		print(p.pos.x, p.pos.y)
+
+	# Fire new laserbeam
+	beam +=  laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
+	print(len(beam))
