@@ -2,7 +2,8 @@
 
 import vpython as vp
 import random as rand
-from drawings import table, laserbeam, laserengine, beamsplitter
+import datetime as dt
+from drawings import table, laserbeam, laserengine, beamsplitter, mirror ,wood
 
 # Set alias to ease usability
 vc = vp.vector
@@ -96,6 +97,12 @@ mirror1 = None
 mirror2 = None
 # Receptor (top)
 receptor = None
+
+mirror1= mirror(mirror1_x,mirror1_y,mirror1_l,mirror1_g)
+mirror2= mirror(mirror2_x,mirror2_y,mirror2_l,mirror2_g)
+madera1= wood(30.5,0,10,1)
+madera2= wood(0,-30.5,1,10)
+
 
 # Render loop
 while True:

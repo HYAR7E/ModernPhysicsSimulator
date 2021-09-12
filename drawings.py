@@ -89,3 +89,20 @@ def beamreceptorengine(x, y, l):
 		texture="https://i.imgur.com/Ijy9Yqs.png")
 	beamreceptor.calc_y = None
 	return beamreceptor
+
+def mirror(x,y,l,g):
+
+	espejo= vp.box(
+		pos=vc(x,y,0),
+		size=vc(g,l,0),
+		color=cl.cyan)
+	return espejo
+
+def wood(x,y,l,g):
+
+	madera=vp.box(
+		pos=vc(x,y,0),
+		size=vc(g,l,0),
+		color=cl.blue)
+
+	return madera
