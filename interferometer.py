@@ -2,6 +2,7 @@
 
 import vpython as vp
 import random as rand
+import datetime as dt
 from drawings import table, laserbeam, laserengine, beamsplitter
 
 # Set alias to ease usability
@@ -36,10 +37,10 @@ def compute_collision(wall, p, walltype):
 		* p: light particle (sphere object)
 	"""
 	# Check if there is collision
-	print("-------------")
-	print("x: %s"%p.pos.x)
-	print("y: %s"%p.pos.y)
-	print("calc y: %s"%wall.calc_y(p.pos.x))
+	#print("-------------")
+	#print("x: %s"%p.pos.x)
+	#print("y: %s"%p.pos.y)
+	#print("calc y: %s"%wall.calc_y(p.pos.x))
 	if wall.calc_y(p.pos.x) == p.pos.y:
 		# If walltype is beamsplitter: odds of ignoring collision is 50%
 		if walltype == "beamsplitter":
@@ -68,29 +69,33 @@ receptor_y = 30
 
 # Physics Parameters
 t = 0 # Init time
-rate = 500 # Ratio of execution per second
-dt = 1000/rate # Time differential (miliseconds)
-dv = vc(0.025, 0, 0) # light particle's movement speed
+rate = 2000 # Ratio of execution per second
+step = 1000/rate # Time differential (miliseconds)
+dv = vc(0.25, 0, 0) # light particle's movement speed
+""" dv
+* this value should be half the value of step in laserbeam function
+"""
 beamsplitter_angle = 45
-number_of_particles = 50
+number_of_particles = 20
 
 
 """ EXECUTE """
+# Objects list
+beam = list()
+
 # Objects
 table(100, 100, vc(.9, .9, .9))
 engine = laserengine(laserengine_x, laserengine_y, laserengine_length, cl.black)
 splitter = beamsplitter(beamsplitter_x, beamsplitter_y, beamsplitter_length, beamsplitter_angle)
-beam = laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles)
-
-# Set speed to beam
-for p in beam: p.speed = vc(dv.x, dv.y, dv.z)
+beam += laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
 
 # Render loop
-while t<4000:
+while True:
 	vp.rate(rate) # Pause for time differential
-	t += dt
+	t += step
 
 	# Compute from cods
+	dto = dt.datetime.now()
 	for p in beam:
 		# Collision with BeamSplitter
 		if True \
@@ -103,3 +108,9 @@ while t<4000:
 		# Collision with Mirror2
 		# Collision with Receptor
 		move_particle(p)
+	print("loop: %s"%(dt.datetime.now() - dto).microseconds)
+
+	if t%20 == 0:
+		# Fire new laserbeam
+		beam +=  laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
+		print(len(beam))

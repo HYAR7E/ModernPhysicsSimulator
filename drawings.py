@@ -7,20 +7,19 @@ cl = vp.color
 def table(x, y, c):
 	vp.box(pos=vc(0, 0, -2), size=vc(x, y, 1), color=c)
 
-def laserbeam(x, y, n, s=.1):
+def laserbeam(x, y, n, speed):
 	""" Print a laserbeam iteration
 		* print a "group" of light particles piled up onto the Y axis
 	params:
 		* x: X axis
 		* y: Y axis
 		* n: number of light particles to be generated into the beam
-		* s: radius of light particles
 	"""
 	# Validate n have to be at least 2
 	if n < 1: return
 
 	# Define step longitude
-	step = .001
+	step = 0.5
 	odd = n%2!=0 # n is odd?
 	# Set start coordinate as Y (Y axis)
 	start = y
@@ -32,8 +31,9 @@ def laserbeam(x, y, n, s=.1):
 	beam = list() # list to contain light particles
 	for i in range(1, n+1):
 		# Generate sphere (light particle)
-		p = vp.sphere(pos=vc(x, start, 0), radius=s, color=cl.red, make_trail=True)
+		p = vp.sphere(pos=vc(x, start, 0), radius=step/2, color=cl.red)
 		p.id = i
+		p.speed = vc(speed.x, speed.y, speed.z)
 		beam.append(p) # Add sphere to beam list
 		start = round(start + step, 3) # Iterate start (y axis) with step
 	# Return beam (list of light particles)
