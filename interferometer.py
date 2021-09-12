@@ -3,7 +3,7 @@
 import vpython as vp
 import random as rand
 import datetime as dt
-from drawings import table, laserbeam, laserengine, beamsplitter
+from drawings import table, laserbeam, laserengine, beamsplitter,mirror ,wood
 
 # Set alias to ease usability
 vc = vp.vector
@@ -61,9 +61,13 @@ beamsplitter_x = 0
 beamsplitter_y = 0
 beamsplitter_length = 10
 mirror1_x = 30 # L1
-mirror1_y = -10
+mirror1_y = 0
+mirror1_l = 10
+mirror1_g = 0.5
 mirror2_x = 0
 mirror2_y = -30 # L2
+mirror2_l = 0.5
+mirror2_g = 10
 receptor_x = 0
 receptor_y = 30
 
@@ -88,6 +92,11 @@ table(100, 100, vc(.9, .9, .9))
 engine = laserengine(laserengine_x, laserengine_y, laserengine_length, cl.black)
 splitter = beamsplitter(beamsplitter_x, beamsplitter_y, beamsplitter_length, beamsplitter_angle)
 beam += laserbeam(laserengine_x+laserengine_length, laserengine_y, number_of_particles, dv)
+mirror1= mirror(mirror1_x,mirror1_y,mirror1_l,mirror1_g)
+mirror2= mirror(mirror2_x,mirror2_y,mirror2_l,mirror2_g)
+madera1= wood(30.5,0,10,1)
+madera2= wood(0,-30.5,1,10)
+
 
 # Render loop
 while True:
