@@ -74,35 +74,33 @@ def beamsplitter(x, y, l, angle):
 		up=vc(vp.cos(rad), vp.sin(rad), 0),
 		color=cl.white)
 	splitter.calc_y = lambda _x: round((_x - x)*vp.tan(rad) + y, 3)
+	splitter.angle = rad
 	return splitter
 
-def beamreceptorengine(x, y, l):
+def beamreceptorengine(x, y, l, angle):
 	""" Print beam receptor
 	params:
 		* x: X axis
 		* y: Y axis
-		* l: width
+		* w: width
 	"""
+	rad = angle*vp.pi/180
 	beamreceptor = vp.box(
 		pos=vc(x, y, 0),
-		size=vc(l, 1, 1),
+		size=vc(2, l, 0),
+		up=vc(vp.cos(rad), vp.sin(rad), 0),
 		texture="https://i.imgur.com/Ijy9Yqs.png")
 	beamreceptor.calc_y = None
+	beamreceptor.angle = rad
 	return beamreceptor
 
-def mirror(x,y,l,g):
-
-	espejo= vp.box(
-		pos=vc(x,y,0),
-		size=vc(g,l,0),
-		color=cl.cyan)
-	return espejo
-
-def wood(x,y,l,g):
-
-	madera=vp.box(
-		pos=vc(x,y,0),
-		size=vc(g,l,0),
-		color=cl.blue)
-
-	return madera
+def mirror(x, y, l, angle):
+	rad = angle*vp.pi/180
+	mirror =  vp.box(
+		pos=vc(x, y, 0),
+		size=vc(1, l, 0),
+		up=vc(vp.cos(rad), vp.sin(rad), 0),
+		color=cl.white)
+	mirror.calc_y = None
+	mirror.angle = rad
+	return mirror
