@@ -3,7 +3,7 @@
 import vpython as vp
 import random as rand
 import datetime as dt
-from drawings import laserbeam, x_table, x_laserengine, x_beamsplitter, x_beamreceptor, x_mirror
+from drawings import laserbeam, x_table, x_laserengine, x_beamsplitter, x_beamreceptor, x_mirror, indicator, data
 
 """ Fake empty object
 obj = lambda: None
@@ -52,7 +52,7 @@ class Interferometer():
 		settings.objects.mirror_r = lambda: None
 		settings.objects.mirror_b = lambda: None
 		settings.objects.receptor = lambda: None
-
+		settings.objects.indicator = lambda: None
 		""" DATA """
 		# Laser Engine
 		settings.objects.laserengine.x = -45
@@ -77,6 +77,20 @@ class Interferometer():
 		settings.objects.receptor.y = 30
 		settings.objects.receptor.length = 10
 		settings.objects.receptor.angle = 0
+		#indicator
+		settings.objects.indicator.x = 25
+		settings.objects.indicator.y = 40
+		settings.objects.indicator.w = 25
+		#para +2
+		cantidad=3 #fila n+1 
+		settings.objects.indicator.n=cantidad
+		if cantidad%2==0:
+			cantidads=cantidad/2
+			settings.objects.indicator.h = 6+(2*(cantidads))+(3*(cantidads))  
+		else:
+			cantidads=round((cantidad-0.1)/2)
+			settings.objects.indicator.h = 6+(2*(cantidads+1))+(3*(cantidads))  
+		#6,8,11,13,16,18
 
 	def set_physics_settings(self):
 		# Physics Settings
@@ -144,6 +158,19 @@ class Interferometer():
 			self.settings.physics.number_of_particles,
 			self.settings.physics.dv)
 
+		#indicator 
+		objects.indicator = indicator(
+			self.settings.objects.indicator.x,
+			self.settings.objects.indicator.y,
+			self.settings.objects.indicator.h,
+			self.settings.objects.indicator.w, 2)
+		GF=data(
+			self.settings.objects.indicator.x,
+			self.settings.objects.indicator.y,
+			self.settings.objects.indicator.w,
+			self.settings.objects.indicator.h,
+			self.settings.objects.indicator.n)
+		
 	""" FUNCTIONS """
 	def move_particle(self, p):
 		""" Move particle by its own speed
@@ -234,7 +261,6 @@ class Interferometer():
 		while True:
 			vp.rate(self.settings.physics.rate) # Pause
 			self.settings.physics.t += 1
-
 			# Compute from cods
 			for p in self.beam:
 				# Collision with BeamSplitter
@@ -290,3 +316,4 @@ class Interferometer():
 					self.settings.physics.number_of_particles,
 					self.settings.physics.dv)
 			print(len(self.beam))
+

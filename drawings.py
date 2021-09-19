@@ -69,7 +69,7 @@ def x_mirror(x, y, l, angle):
 		pos=vc(x, y, 0),
 		size=vc(1, l, 0),
 		up=vc(vp.cos(rad), vp.sin(rad), 0),
-		color=cl.white)
+		color=cl.cyan)
 	mirror.calc_y = None
 	mirror.angle = rad
 	return mirror
@@ -105,3 +105,19 @@ def laserbeam(x, y, n, speed):
 		start = round(start + step, 3) # Iterate start (y axis) with step
 	# Return beam (list of light particles)
 	return beam
+
+def indicator(x, y, h, w, n):
+	bar = vp.shapes.rectangle(width=w, height=h, thickness=0.05, roundness=0.1)
+	GH = vp.extrusion(path=[vp.vec(0,0,0), vp.vec(0,0,-0.1)], color=vp.color.red, pos=vp.vector(x, y, 2), shape=bar)
+	for i in range(-3, round(w/2),round(w/3) ):
+		column = vp.shapes.rectangle(width=0.5, height=h-2, roundness=0.1) 
+		vp.extrusion(path=[vp.vec(0,0,0), vp.vec(0,0,-0.1)], color=vp.color.black, pos=vp.vector(x+i, y,2), shape=column)
+	#vp.text(pos=GH.pos-vp.vector(w/3,0,0), text='∆x', align='center', height=2, depth=0, color=vp.color.blue)
+	vp.text(pos=vp.vec(x-(w/3),y+(h/3)-3,5), text='∆x', align='center', height=2, depth=0, color=vp.color.blue)
+	vp.text(pos=vp.vec(x,y+(h/3)-3,5), text='N', align='center', height=2, depth=0, color=vp.color.blue)
+	vp.text(pos=vp.vec(x+(w/3),y+(h/3)-3,5), text='λ', align='center', height=2, depth=0, color=vp.color.blue)
+
+def data(x,y,w,h,n):
+	for i in range(2,n*2+3,2):
+		number=str(round(i/2))
+		vp.text(pos=vp.vec(x,y+(h/3)-i-2,2), text=number, align='center', height=1.5, depth=0, color=vp.color.black)
