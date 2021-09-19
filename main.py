@@ -13,13 +13,23 @@ if __name__ == '__main__':
 
 	# Execute simulator
 	if call_to == "interferometer":
-		it = Interferometer()
+		if len(sys.argv) > 2:
+			it = Interferometer(beamtype=sys.argv[2])
+		else:
+			it = Interferometer()
 		it.execute()
 	else:
 		print("Simulator not supported")
 
+	""" Egs:
+	* python3 main.py interferometer
+	* python3 main.py interferometer wave
+	"""
+
 
 """ TODO
-* constant supply of light
+* Particle's traveled distance
+* Wave behaviour calcs (wave sum by traveled distance)
 * Show interference pattern in screen
+* Move mirror (L1 ^ L2)
 """

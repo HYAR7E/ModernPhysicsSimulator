@@ -74,7 +74,7 @@ def x_mirror(x, y, l, angle):
 	mirror.angle = rad
 	return mirror
 
-def laserbeam(x, y, n, speed):
+def laserbeam(x, y, n, speed, order=False):
 	""" Print a laserbeam iteration
 		* print a "group" of light particles piled up onto the Y axis
 	params:
@@ -93,16 +93,23 @@ def laserbeam(x, y, n, speed):
 	# Update start coordinate according to n and if n is odd or not
 	if odd: start += -step*(n//2)
 	else: start += (1-n)*step/2
-	start = round(start, 3)
+	start = round(start - step, 3)
 	# Iterate in n range
 	beam = list() # list to contain light particles
-	for i in range(1, n+1):
+	for i in range(0, n):
+		start = round(start + step, 3) # Iterate start (y axis) with step
+
+		# Wave like behaviour
+		if order is not False:
+			if order//n%2 == 1:
+				if i != (n-1) - order%n: continue
+			elif i != order%n: continue
+
 		# Generate sphere (light particle)
 		p = vp.sphere(pos=vc(x, start, 0), radius=step/2, color=cl.red)
 		p.id = i
 		p.speed = vc(speed.x, speed.y, speed.z)
 		beam.append(p) # Add sphere to beam list
-		start = round(start + step, 3) # Iterate start (y axis) with step
 	# Return beam (list of light particles)
 	return beam
 

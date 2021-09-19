@@ -12,8 +12,11 @@ obj = lambda: None
 """
 
 class Interferometer():
-	def __init__(self):
+	def __init__(self, beamtype="regular"):
 		self.vp = vp
+
+		# Custom behaviour
+		self.wavelike = beamtype == "wave"
 
 		# Set alias to ease usability
 		self.vc = vp.vector
@@ -30,6 +33,9 @@ class Interferometer():
 		self.beam = list()
 		# Initialize objects
 		self.init_objects()
+
+		# Interference pattern
+		self.pattern = list( [0 for _ in range(0, self.settings.physics.number_of_particles)] )
 
 	""" SETTINGS """
 	def init(self):
@@ -53,6 +59,7 @@ class Interferometer():
 		settings.objects.mirror_b = lambda: None
 		settings.objects.receptor = lambda: None
 		settings.objects.indicator = lambda: None
+
 		""" DATA """
 		# Laser Engine
 		settings.objects.laserengine.x = -45
@@ -77,12 +84,12 @@ class Interferometer():
 		settings.objects.receptor.y = 30
 		settings.objects.receptor.length = 10
 		settings.objects.receptor.angle = 0
-		#indicator
+		# Indicator
 		settings.objects.indicator.x = 25
 		settings.objects.indicator.y = 40
 		settings.objects.indicator.w = 25
-		#para +2
-		cantidad=3 #fila n+1 
+		# para +2
+		cantidad=3 # fila n+1 
 		settings.objects.indicator.n=cantidad
 		if cantidad%2==0:
 			cantidads=cantidad/2
@@ -90,7 +97,6 @@ class Interferometer():
 		else:
 			cantidads=round((cantidad-0.1)/2)
 			settings.objects.indicator.h = 6+(2*(cantidads+1))+(3*(cantidads))  
-		#6,8,11,13,16,18
 
 	def set_physics_settings(self):
 		# Physics Settings
@@ -111,7 +117,7 @@ class Interferometer():
 		# angle of beamsplitter
 		settings.physics.beamsplitter_angle = 45
 		# number of particles per beam
-		settings.physics.number_of_particles = 10
+		settings.physics.number_of_particles = 5
 
 	def init_objects(self):
 		# Initialize Objects
@@ -192,7 +198,10 @@ class Interferometer():
 
 		# Check if there is collision
 		if bs.calc_y(p.pos.x) == p.pos.y:
-			if bool( rand.randint(0, 1) ): return
+			if bool( rand.randint(0, 1) ):
+				if p.speed.x < 0 and p.speed.y == 0:
+					self.delete_particle(p)
+				return
 
 			# Update speed vector
 			rad = bs.angle
@@ -226,9 +235,7 @@ class Interferometer():
 		if not wall.calc_y or wall.calc_y(p.pos.x) == p.pos.y:
 			# If walltype is receptor: remove point
 			if walltype == "receptor":
-				p.visible = False
-				self.beam.remove(p) # Remove particle from beam
-				del(p) # Free memory
+				self.delete_particle(p, receptor=True)
 				return
 
 			# Update speed vector
@@ -254,14 +261,48 @@ class Interferometer():
 			p.speed.x = _x
 			p.speed.y = _y
 
+	def delete_particle(self, p, receptor=False):
+		if receptor:
+			self.pattern[p.id] = 1
+
+		# Delete particle when it heads towards light origen (no more compute needed)
+		p.visible = False
+		self.beam.remove(p) # Remove particle from beam
+		del(p) # Free memory
+
+	def print_2dpattern(self, pattern):
+		ar = pattern.copy()
+		ar.reverse()
+		r = list()
+		for x in range(0, len(ar)):
+			l = list()
+			for y in range(0, len(ar)):
+				v = "-"
+				for i in range(0, len(ar)):
+					if x == i or y == i: v = "0" if ar[i] else "-"
+				l.append(v)
+				_l = l[::-1]
+				_l.pop()
+			r.append(_l+l)
+		_r = r[::-1]
+		_r.pop()
+		res = _r+r
+		print("".join(["*" for _ in range(0, len(ar)*2-1)]))
+		for r in res: print("".join(r))
+
 	""" EXECUTE """
 	def execute(self):
 		vp = self.vp
-		# Render loop
+		# Render loop (animation)
 		while True:
-			vp.rate(self.settings.physics.rate) # Pause
+			if self.wavelike: vp.rate(self.settings.physics.rate/2) # Pause
+			else: vp.rate(self.settings.physics.rate) # Pause
 			self.settings.physics.t += 1
-			# Compute from cods
+
+			# Reset pattern
+			self.pattern = list( [0 for _ in range(0, self.settings.physics.number_of_particles)] )
+
+			# Compute from cords
 			for p in self.beam:
 				# Collision with BeamSplitter
 				if True \
@@ -298,22 +339,22 @@ class Interferometer():
 					or p.pos.x < (self.objects.laserengine.pos.x+self.settings.objects.laserengine.length) \
 					or p.pos.y < self.objects.mirror_b.pos.y \
 					or p.pos.y > self.objects.receptor.pos.y :
-					# Hide particle (prevent remaining image after removing)
-					p.visible = False
-					self.beam.remove(p) # Remove particle from beam
-					del(p) # Free memory
+					self.delete_particle(p)
 					continue
 
 				# Move particle
 				self.move_particle(p)
 
 			# Fire new laserbeam
-			if self.settings.physics.t < 40:
+			#if len(self.beam) < 3300:
+			if len(self.beam) < 2500:
 				self.beam += laserbeam(
 					self.settings.objects.laserengine.x\
 					+self.settings.objects.laserengine.length,
 					self.settings.objects.laserengine.y,
 					self.settings.physics.number_of_particles,
-					self.settings.physics.dv)
-			print(len(self.beam))
+					self.settings.physics.dv,
+					self.wavelike and self.settings.physics.t)
 
+			# Print pattern as 2D
+			self.print_2dpattern(self.pattern)
