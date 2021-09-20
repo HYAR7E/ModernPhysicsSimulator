@@ -113,18 +113,48 @@ def laserbeam(x, y, n, speed, order=False):
 	# Return beam (list of light particles)
 	return beam
 
-def indicator(x, y, h, w, n):
-	bar = vp.shapes.rectangle(width=w, height=h, thickness=0.05, roundness=0.1)
-	GH = vp.extrusion(path=[vp.vec(0,0,0), vp.vec(0,0,-0.1)], color=vp.color.red, pos=vp.vector(x, y, 2), shape=bar)
-	for i in range(-3, round(w/2),round(w/3) ):
-		column = vp.shapes.rectangle(width=0.5, height=h-2, roundness=0.1) 
-		vp.extrusion(path=[vp.vec(0,0,0), vp.vec(0,0,-0.1)], color=vp.color.black, pos=vp.vector(x+i, y,2), shape=column)
-	#vp.text(pos=GH.pos-vp.vector(w/3,0,0), text='∆x', align='center', height=2, depth=0, color=vp.color.blue)
-	vp.text(pos=vp.vec(x-(w/3),y+(h/3)-3,5), text='∆x', align='center', height=2, depth=0, color=vp.color.blue)
-	vp.text(pos=vp.vec(x,y+(h/3)-3,5), text='N', align='center', height=2, depth=0, color=vp.color.blue)
-	vp.text(pos=vp.vec(x+(w/3),y+(h/3)-3,5), text='λ', align='center', height=2, depth=0, color=vp.color.blue)
-
-def data(x,y,w,h,n):
-	for i in range(2,n*2+3,2):
-		number=str(round(i/2))
-		vp.text(pos=vp.vec(x,y+(h/3)-i-2,2), text=number, align='center', height=1.5, depth=0, color=vp.color.black)
+def indicator(x,y,r):
+	A = [1,1,0,0,1,1]
+	n=len(A)
+	R=0#--
+	for i in range(0,n):
+		colors=cl.black
+		if A[i]==1:
+			colors=cl.white
+		splitter = vp.box(
+			pos=vc(x+i, y, 50),
+			size=vc(1, 1, 1),
+			color=colors)#,opacity=0.8)
+		R=x+i
+		#d/2:radio=R+r
+	#r:distancia de de la ultima caja al centro de la circunferencia
+	a=[]
+	for i in range(2,n+2):
+		angle = 0
+		shape = .02 #0.9:pentagon
+		eje_x=R+(2*r)+i-2
+		base = vp.cylinder(
+			pos=vc(R+r,y,50), 
+			axis=vc(i+r-2,0,0), 
+			radius=.02, 
+			color=vp.color.white, 
+			visible=False)
+		girth = vp.curve(
+			color=vp.color.orange, 
+			radius= .02)
+		girth.append(vc(eje_x,y,50))
+		a.append(i)
+		if A[n-i+1]==1:
+			while angle < 2*vp.pi:
+				vp.rate(1000)
+				base.rotate(
+					angle=shape, 
+					axis=vc(0,0,1), 
+					origin=base.pos) 
+				girth.append(base.pos+base.axis)
+				angle += shape
+				a.insert(i-2,girth)
+	vp.sleep(1) # sleep for 1 second
+	for g in range(0,n):
+		h=a[g]
+		#h.clear()
