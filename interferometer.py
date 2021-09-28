@@ -33,6 +33,8 @@ class Interferometer():
 		self.beam = list()
 		# Initialize objects
 		self.init_objects()
+		# Add event handlers
+		self.set_event_handlers()
 
 		# Interference pattern
 		self.pattern = list( [0 for _ in range(0, self.settings.physics.number_of_particles)] )
@@ -41,13 +43,14 @@ class Interferometer():
 	def init(self):
 		vp = self.vp
 		# Set library configuration
-		vp.scene.width = 1500
-		vp.scene.height = 750
+		vp.scene.title = "Interferometro\n"
+		vp.scene.width = 1200
+		vp.scene.height = 650
 		vp.scene.autoscale = False
 		#vp.scene.userspin = False
 		#vp.scene.userpan = False
 		vp.scene.background = self.vc(.7, .7, .7)
-		vp.scene.camera.pos = self.vc(0, 0, 70)
+		vp.scene.camera.pos = self.vc(0, 0, 40)
 
 	def set_settings(self):
 		# Regular Settings
@@ -97,15 +100,13 @@ class Interferometer():
 		settings.physics.t = 0
 		# Ratio of execution per second
 		settings.physics.rate = 200
-		# Time differential (miliseconds)
-		settings.physics.step = 1000/settings.physics.rate
 		# light particle's movement speed
 		""" dv
 		* this value should be half the value of step in laserbeam function
 		"""
 		settings.physics.dv = self.vc(0.25, 0, 0)
 		# angle of beamsplitter
-		settings.physics.beamsplitter_angle = 45
+		settings.physics.beamsplitter_angle = 135
 		# number of particles per beam
 		settings.physics.number_of_particles = 5
 
@@ -159,7 +160,83 @@ class Interferometer():
 			self.settings.objects.laserengine.y,
 			self.settings.physics.number_of_particles,
 			self.settings.physics.dv)
+		"""
+		#indicator 
+		objects.indicator = indicator(
+			self.settings.objects.indicator.x,
+			self.settings.objects.indicator.y,
+			self.settings.objects.indicator.h,
+			self.settings.objects.indicator.w, 2)
+		GF=data(
+			self.settings.objects.indicator.x,
+			self.settings.objects.indicator.y,
+			self.settings.objects.indicator.w,
+			self.settings.objects.indicator.h,
+			self.settings.objects.indicator.n)
+		"""
 		
+	""" EVENT FUNCTIONS """
+	def btnPlayPause(self, btn):
+		# Func to set play or pause
+		self.playing = not self.playing
+		if self.playing: btn.text = "Detener"
+		else: btn.text = "Continuar"
+	def btnResetBeam(self, btn):
+		for p in self.beam: p.visible = False
+		del(self.beam) # Free memory
+		self.beam = list()
+	def sldDistanceToMirrorR(self, sld):
+		self.objects.mirror_r.pos.x = round(sld.value, 0)
+		self.widgets.x.text = "X: "+str(int(self.objects.mirror_r.pos.x))
+	def sldDistanceToMirrorB(self, sld):
+		self.objects.mirror_b.pos.y = round(sld.value*-1, 0)
+		self.widgets.y.text = "Y: "+str(int(self.objects.mirror_b.pos.y*-1))
+	def sldSpeed(self, sld):
+		self.settings.physics.rate = round(sld.value, 0)
+		self.widgets.dv.text = "Ejecuciones por segundo: "+str(int(self.settings.physics.rate))
+
+	def set_event_handlers(self):
+		vp = self.vp
+		self.widgets = lambda: None
+
+		""" Add Play/Pause/Reset button """
+		self.playing = True
+		vp.button(text="Detener", pos=vp.scene.title_anchor, bind=self.btnPlayPause)
+		vp.button(text="Reiniciar", pos=vp.scene.title_anchor, bind=self.btnResetBeam)
+		vp.scene.append_to_title("\n")
+
+		""" Change Mirror R distance """
+		vp.slider(
+			value=self.objects.mirror_r.pos.x,
+			min=10, max=40, length=300,
+			pos=vp.scene.title_anchor,
+			bind=self.sldDistanceToMirrorR)
+		self.widgets.x = vp.wtext(
+			text="X: "+str(int(self.objects.mirror_r.pos.x)),
+			pos=vp.scene.title_anchor)
+		vp.scene.append_to_title("\n")
+
+		""" Change Mirror B distance """
+		vp.slider(
+			value=self.objects.mirror_b.pos.y*-1,
+			min=10, max=40, length=300,
+			pos=vp.scene.title_anchor,
+			bind=self.sldDistanceToMirrorB)
+		self.widgets.y = vp.wtext(
+			text="Y: "+str(int(self.objects.mirror_b.pos.y*-1)),
+			pos=vp.scene.title_anchor)
+		vp.scene.append_to_title("\n")
+
+		""" Change execution speed """
+		vp.slider(
+			value=self.settings.physics.rate,
+			min=10, max=300, length=300,
+			pos=vp.scene.title_anchor,
+			bind=self.sldSpeed)
+		self.widgets.dv = vp.wtext(
+			text="Ejecuciones por segundo: "+str(int(self.settings.physics.rate)),
+			pos=vp.scene.title_anchor)
+
 	""" FUNCTIONS """
 	def move_particle(self, p):
 		""" Move particle by its own speed
@@ -181,7 +258,10 @@ class Interferometer():
 
 		# Check if there is collision
 		if bs.calc_y(p.pos.x) == p.pos.y:
-			if bool( rand.randint(0, 1) ):
+			if p.speed.y > 0: return # No collision when +Y
+			# Skip collision
+			# Not skip collision when -X
+			if bool( rand.randint(0, 1) ) and not p.speed.x < 0:
 				if p.speed.x < 0 and p.speed.y == 0:
 					self.delete_particle(p)
 				return
@@ -192,7 +272,7 @@ class Interferometer():
 
 			# Calculate new speed
 			_x = round( mag*( vp.cos(rad)**2 - vp.sin(rad)**2 ) , 3)
-			_y = round( 2*mag*vp.sin(rad)*vp.cos(rad) , 3)
+			_y = round( -2*mag*vp.sin(rad)*vp.cos(rad) , 3)
 			# Calc change in direction of velocity from diff_angle between wall and point
 			deg = round( vp.degrees( vp.diff_angle(bs.up, p.speed) ) , 3)
 			if deg > 90:
@@ -278,6 +358,8 @@ class Interferometer():
 		vp = self.vp
 		# Render loop (animation)
 		while True:
+			if not self.playing: continue
+
 			if self.wavelike: vp.rate(self.settings.physics.rate/2) # Pause
 			else: vp.rate(self.settings.physics.rate) # Pause
 			self.settings.physics.t += 1
@@ -329,7 +411,6 @@ class Interferometer():
 				self.move_particle(p)
 
 			# Fire new laserbeam
-			#if len(self.beam) < 3300:
 			if len(self.beam) < 2500:
 				self.beam += laserbeam(
 					self.settings.objects.laserengine.x\
