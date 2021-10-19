@@ -108,10 +108,28 @@ def laserbeam(x, y, n, speed, order=False):
 		# Generate sphere (light particle)
 		p = vp.sphere(pos=vc(x, start, 0), radius=step/2, color=cl.red)
 		p.id = i
+		p.pk = order
+		p.yx = vp.ceil(i-n/2)
+		p.traveled = 0
+		p.semiparticle = False
+		p.resultant = False
 		p.speed = vc(speed.x, speed.y, speed.z)
 		beam.append(p) # Add sphere to beam list
 	# Return beam (list of light particles)
 	return beam
+
+def copy_particle(_p, speed_x=0, speed_y=0, speed_z=0, result=False):
+	_color = cl.red if result else cl.blue
+	#_color = [cl.blue, cl.green, cl.black, cl.purple, cl.white][_p.id]
+	p = vp.sphere(pos=vc(_p.pos.x, _p.pos.y, _p.pos.z), radius=0.5/2, color=_color) # semi particle color
+	p.id = _p.id
+	p.pk = _p.pk
+	p.yx = _p.yx
+	p.traveled = _p.traveled
+	p.semiparticle = True
+	p.resultant = result
+	p.speed = vc(speed_x, speed_y, speed_z)
+	return p
 
 def indicator(x,y,r):
 	A = [1,1,0,0,1,1]

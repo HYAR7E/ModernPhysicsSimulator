@@ -3,7 +3,10 @@
 import vpython as vp
 import random as rand
 import datetime as dt
-from drawings import laserbeam, x_table, x_laserengine, x_beamsplitter, x_beamreceptor, x_mirror, indicator
+from drawings import laserbeam, x_table,\
+	x_laserengine, x_beamsplitter,\
+	x_beamreceptor, x_mirror, indicator,\
+	copy_particle
 
 """ Fake empty object
 obj = lambda: None
@@ -31,6 +34,7 @@ class Interferometer():
 
 		# Beam (Objects list)
 		self.beam = list()
+		self.to_delete = list()
 		# Initialize objects
 		self.init_objects()
 		# Add event handlers
@@ -97,7 +101,7 @@ class Interferometer():
 		settings.physics = lambda: None
 
 		# Init time (miliseconds)
-		settings.physics.t = 0
+		settings.physics.t = 1
 		# Ratio of execution per second
 		settings.physics.rate = 200
 		# light particle's movement speed
@@ -159,7 +163,8 @@ class Interferometer():
 			+self.settings.objects.laserengine.length,
 			self.settings.objects.laserengine.y,
 			self.settings.physics.number_of_particles,
-			self.settings.physics.dv)
+			self.settings.physics.dv,
+			self.wavelike and self.settings.physics.t)
 		"""
 		#indicator 
 		objects.indicator = indicator(
@@ -243,9 +248,12 @@ class Interferometer():
 		params:
 			* p: light particles
 		"""
-		p.pos.x = round(p.pos.x + p.speed.x, 3)
-		p.pos.y = round(p.pos.y + p.speed.y, 3)
-		p.pos.z = round(p.pos.z + p.speed.z, 3)
+		_x = round(p.pos.x + p.speed.x, 6)
+		p.pos.x = _x
+		_y = round(p.pos.y + p.speed.y, 6)
+		p.pos.y = _y
+		p.pos.z = round(p.pos.z + p.speed.z, 6)
+		p.traveled = round(p.traveled + vp.sqrt(_x**2 + _y**2), 6)
 
 	def beamsplitter_collision(self, bs, p):
 		""" compute_collision
@@ -258,32 +266,51 @@ class Interferometer():
 
 		# Check if there is collision
 		if bs.calc_y(p.pos.x) == p.pos.y:
-			if p.speed.y > 0: return # No collision when +Y
-			# Skip collision
-			# Not skip collision when -X
-			if bool( rand.randint(0, 1) ) and not p.speed.x < 0:
-				if p.speed.x < 0 and p.speed.y == 0:
-					self.delete_particle(p)
+
+			# Resultant particle
+			if p.resultant: return
+
+			# Split beam
+			if p.speed.x >= 0 and p.speed.y >= 0 and not p.semiparticle:
+				# Generate 2 particles with same id
+				p1 = copy_particle(p, speed_x=p.speed.x, speed_y=p.speed.y)
+				p2 = copy_particle(p, speed_x=p.speed.y, speed_y=-p.speed.x)
+				self.beam.append(p1)
+				self.beam.append(p2)
+				self.delete_particle(p)
 				return
 
-			# Update speed vector
-			rad = bs.angle
-			mag = vp.mag(p.speed) # Get magnitude (abs of vector)
+			# Semiparticles collision
+			if p.semiparticle and (p.speed.x < 0 or p.speed.y > 0):
+				# Get semiparticles with same ID and same pos
+				particles = [_p for _p in self.beam if _p.semiparticle and _p.pos == p.pos and _p.id == p.id and (_p.speed.x < 0 or _p.speed.y > 0)]
 
-			# Calculate new speed
-			_x = round( mag*( vp.cos(rad)**2 - vp.sin(rad)**2 ) , 3)
-			_y = round( -2*mag*vp.sin(rad)*vp.cos(rad) , 3)
-			# Calc change in direction of velocity from diff_angle between wall and point
-			deg = round( vp.degrees( vp.diff_angle(bs.up, p.speed) ) , 3)
-			if deg > 90:
-				_x *= -1
-				_y *= -1
-			if abs(p.speed.y) > abs(p.speed.x):
-				_tmp = _x
-				_x = _y
-				_y = _tmp
-			p.speed.x = _x
-			p.speed.y = _y
+				# No collision
+				if len(particles) < 2:
+					# Set speed straight up
+					p.speed.y = max(abs(p.speed.x), abs(p.speed.y))
+					p.speed.x = 0
+					p.color = self.cl.green
+					p.resultant = True
+				else:
+					# Collision
+					# and _p.pk != p.pk
+
+					# Calc new _p id
+					sum_id = p.yx
+					sum_id = [sum_id+(_p.yx if _p.pk != p.pk else 0) for _p in particles][-1]
+
+					# Create resultant particle
+					pr = copy_particle(p, speed_x=0, speed_y=max(abs(p.speed.x), abs(p.speed.y)), result=True)
+					pr.yx = sum_id
+					self.beam.append(pr)
+
+					# Delete semiparticles
+					[self.delete_particle(_p) for _p in particles]
+				return
+
+			# Prevent instant collision when generated
+			if p.semiparticle: return
 
 	def compute_collision(self, p, wall, walltype):
 		""" compute_collision
@@ -326,12 +353,18 @@ class Interferometer():
 
 	def delete_particle(self, p, receptor=False):
 		if receptor:
-			self.pattern[p.id] = 1
+			self.pattern[p.id] += p.yx
 
 		# Delete particle when it heads towards light origen (no more compute needed)
 		p.visible = False
-		self.beam.remove(p) # Remove particle from beam
-		del(p) # Free memory
+		self.to_delete.append(p)
+
+	def delete_particles(self):
+		for _p in self.to_delete:
+			try: self.beam.remove(_p) # Remove particle from beam
+			except: pass
+			del(_p) # Free memory
+		self.to_delete = list()
 
 	def print_2dpattern(self, pattern):
 		ar = pattern.copy()
@@ -411,7 +444,8 @@ class Interferometer():
 				self.move_particle(p)
 
 			# Fire new laserbeam
-			if len(self.beam) < 2500:
+			#if self.settings.physics.t < 150:
+			if len(self.beam) < 800:
 				self.beam += laserbeam(
 					self.settings.objects.laserengine.x\
 					+self.settings.objects.laserengine.length,
@@ -420,5 +454,9 @@ class Interferometer():
 					self.settings.physics.dv,
 					self.wavelike and self.settings.physics.t)
 
+			# Delete particles
+			self.delete_particles()
+
 			# Print pattern as 2D
-			self.print_2dpattern(self.pattern)
+			print("pattern: %s"%self.pattern)
+			#self.print_2dpattern(self.pattern)
